@@ -9,8 +9,11 @@ Features:
 2. Supports windows and unix arguments for version display.
 
 Arguments available: 
-project-checkurl --v (or --version, /v or /version to view the current tool's version.)
-project-checkurl [filename] (will scan the file of URLs and determine their availability.)
+1. --v (or --version, /v or /version to view the current tool's version.)
+2. [filename] (will scan the file of URLs and determine their availability.)
 
-# How to Install
+# How to Use
 
+Installing the package: ```npm install project-checkurl```
+Check the current version: ```project-checkurl --v```
+Scan file for working URLs: ```project-checkurl filename.txt```
