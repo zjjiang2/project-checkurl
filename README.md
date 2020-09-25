@@ -14,7 +14,7 @@ Arguments available:
 
 # How to Use
 
-Installing the package: ```npm install project-checkurl```
+Installing the package: ```npm install -g project-checkurl```
 
 Check the current version: ```project-checkurl --v```
 
