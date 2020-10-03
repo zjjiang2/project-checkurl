@@ -5,7 +5,7 @@ My first repository on Github for Release 0.1
 This is a CLI Tool made in Node.js to take a file name as argument, then scan each valid URL found within the document for their availability.
 
 Features:
-1. Color coded outputs, 🟢green for good links, 🔴red for bad links, and ⚫gray for unknown links.
+1. Color coded outputs, 🟢green for good links, 🔴red for bad links, 🟡yellow for links with errors and ⚫gray for unknown links.
 2. Supports windows and unix arguments for version display.
 
 Arguments available: 
