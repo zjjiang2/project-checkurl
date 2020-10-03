@@ -5,11 +5,7 @@ const fs = require('fs');
 const colors = require('colors');
 const axios = require('axios');
 
-//setting regex expression for URLs
-//const urlRegex = /(https?:\/\/(?:www\.|(?!www))[a-zA-Z0-9][a-zA-Z0-9-]+[a-zA-Z0-9]\.[^\s]{2,}|https?:\/\/(?:www\.|(?!www))[a-zA-Z0-9]+\.[^\s]{2,})/g;
-//const urlRegex = /(https?:\/\/[a-zA-Z0-9][a-zA-Z0-9-]+[a-zA-Z0-9]\.[^\s]{2,}|https?:\/\/[a-zA-Z0-9]+\.[^\s]{2,})/g;
 const urlRegex = /(https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,9}\b([-a-zA-Z0-9()@:%_\+.~#?&\/\/;=]*))/g;
-
 
 function versionOption(rawArgs) {
     const args = arg({
@@ -24,12 +20,8 @@ function versionOption(rawArgs) {
     };
 }
 
-function sleep(ms) {
-    return new Promise(resolve => setTimeout(resolve, ms));
-}
 
-
-async function displayResult(data) {
+function displayResult(data) {
 
     var goodLinks = 0;
     var badLinks = 0;
@@ -42,15 +34,13 @@ async function displayResult(data) {
     let match = urlRegex.exec(data);
     while (match) {
         const siteName = match[1];
-        //console.log(siteName);
 
         axios({
             method: 'GET',
             url: siteName,
+            setTimeout: 5000,
             validateStatus: () => true
         }).then(res => {
-            //console.log(res.status);
-
             if (res.status == 200) {
                 console.log("|Good|\t\t".bgGreen.black + siteName.green);
                 goodLinks++;
@@ -65,31 +55,15 @@ async function displayResult(data) {
             }
 
         }).catch((error) => {
-            //console.log({error})
             unloadedLinks++;
-        });;
+            console.log("|Error|\t".bgYellow.black + siteName.yellow + "\t" + error);
+        });
         totalLinks++;
         match = urlRegex.exec(data);
         if (!match){
             doneMatch = true;
         }
     }
-    
-    await sleep(3000);
-    var links = {goodLinks, badLinks, unknownLinks, unloadedLinks, totalLinks}
-    return Promise.resolve(links);
-
-}
-
-async function displayMsg(data){
-    const a = await displayResult(data);
-    
-    // console.log("\nRESULTS:".yellow);
-    // console.log("Good Links: ".bgGreen.black + a.goodLinks);
-    // console.log("Bad Links: ".bgRed.black + a.badLinks);
-    // console.log("Unknown Links: ".bgWhite.black + a.unknownLinks);
-    // console.log("Unloaded Links: " + a.unloadedLinks);
-    // console.log("Total Links: " + a.totalLinks);
 }
 
 export function cli(args) {
@@ -117,24 +91,14 @@ export function cli(args) {
                 if (err) {
                     return console.log(err);
                 }
-                //data = text file contents
-                //console.log(data);
 
                 console.log("\nValid URLs from \'".yellow + args[2].yellow + "\':\n".yellow);
-
-                //displayResult(data);
-                displayMsg(data);
-
+                displayResult(data);
             });
-
         }
         else {
             console.log(args[2]);
         }
-
-
-
     }
-
-
+    
 }
