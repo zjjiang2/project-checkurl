@@ -4,6 +4,7 @@ import arg from 'arg';
 const fs = require('fs');
 const colors = require('colors');
 const axios = require('axios');
+const version = require('../package.json').version;
 
 const urlRegex = /(https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,9}\b([-a-zA-Z0-9()@:%_\+.~#?&\/\/;=]*))/g;
 
@@ -71,7 +72,7 @@ export function cli(args) {
     let options = versionOption(args);
 
     if (options.showVersion == true || args.slice(2) == '/v' || args.slice(2) == '/version') {
-        console.log("project-checkurl By Jason Jiang, Release 0.1, Version 1.0".blue);
+        console.log("project-checkurl By Jason Jiang, Release 0.1, Version ".blue + version.blue);
     }
     else {
 
