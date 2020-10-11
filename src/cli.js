@@ -11,18 +11,24 @@ const urlRegex = /(https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9(
 function versionOption(rawArgs) {
     const args = arg({
         '--version': Boolean,
-        '--v': '--version'
+        '--v': '--version',
+        '--all' : Boolean,
+        '--good' : Boolean,
+        '--bad' : Boolean
     },
     { argv: rawArgs.slice(2)}
     );
 
     return {
-        showVersion: args['--version'] || false
+        showVersion: args['--version'] || false,
+        showAll: args['--all'] || false,
+        showGood: args['--good'] || false,
+        showBad: args['--bad'] || false
     };
 }
 
 
-function displayResult(data) {
+async function displayResult(data, options) {
 
     var goodLinks = 0;
     var badLinks = 0;
@@ -32,39 +38,62 @@ function displayResult(data) {
 
     var doneMatch = false;
 
-    let match = urlRegex.exec(data);
-    while (match) {
-        const siteName = match[1];
+    var allShowing = true;
 
-        axios({
-            method: 'GET',
-            url: siteName,
-            setTimeout: 5000,
-            validateStatus: () => true
-        }).then(res => {
-            if (res.status == 200) {
-                console.log("|Good|\t\t".bgGreen.black + siteName.green);
-                goodLinks++;
-            }
-            else if (res.status == 404 || res.status == 400) {
-                console.log("|Bad|\t\t".bgRed.black + siteName.red);
-                badLinks++;
-            }
-            else {
-                console.log("|Unknown|\t".bgWhite.black + siteName.gray);
-                unknownLinks++;
-            }
-
-        }).catch((error) => {
-            unloadedLinks++;
-            console.log("|Error|\t".bgYellow.black + siteName.yellow + "\t" + error);
-        });
-        totalLinks++;
-        match = urlRegex.exec(data);
-        if (!match){
-            doneMatch = true;
-        }
+    if (options.showGood == true || options.showBad == true){
+        allShowing = false;
     }
+
+    let match = urlRegex.exec(data);
+    return new Promise((resolve, reject) => {
+
+        while (match) {
+            const siteName = match[1];
+
+            axios({
+                method: 'GET',
+                url: siteName,
+                setTimeout: 5000,
+                validateStatus: () => true
+            })
+            .then(res => {
+                if (res.status == 200) {
+                    if(options.showGood == true || allShowing == true){
+                        console.log("|Good|\t\t".bgGreen.black + siteName.green);
+                    }
+                    goodLinks++;
+                }
+                else if (res.status == 404 || res.status == 400) {
+                    if(options.showBad == true || allShowing == true){
+                        console.log("|Bad|\t\t".bgRed.black + siteName.red);
+                    }
+                    badLinks++;
+                }
+                else {
+                    if(allShowing == true){
+                        console.log("|Unknown|\t".bgWhite.black + siteName.gray);
+                    }
+                    unknownLinks++;
+                }
+            })
+            .catch((error) => {
+                unloadedLinks++;
+                if(allShowing == true){
+                    console.log("|Error|\t\t".bgYellow.black + siteName.yellow + "\t" + error);
+                }
+            });
+
+            totalLinks++;
+
+            match = urlRegex.exec(data);
+            if (!match){
+                doneMatch = true;
+            }
+        }
+
+        setTimeout(() => resolve(), 0)
+    });
+
 }
 
 export function cli(args) {
@@ -79,22 +108,35 @@ export function cli(args) {
         if (args.length == 2) {
             console.log("Please enter a file name that resides in the same directory.".red);
         }
-        else if (args.length == 3) {
+        else if (args.length >= 3) {
+            var params = args.slice(args.length-2, args.length);;
+            var fileName = './' + args[args.length-1];
 
-            //convert args into file location string
-            var fileName = './' + args[2];
-
-
-
+            //loop to allow the arguments to be at any
+            if(options.showGood == true || options.showBad == true){
+                for(var i = 0; i < params.length; i++){
+                    if(params[i].substring(0,2) != '--'){
+                        fileName = './' + params[i];
+                    }
+                }
+            }
+            
+            const promises = []
 
             //start reading the file
             fs.readFile(fileName, 'utf8', function (err, data) {
                 if (err) {
                     return console.log(err);
                 }
+                else{
+                console.log("\nValid URLs from \'".yellow + args[args.length-1].yellow + "\':\n".yellow);
 
-                console.log("\nValid URLs from \'".yellow + args[2].yellow + "\':\n".yellow);
-                displayResult(data);
+                promises.push(displayResult(data, options));
+                Promise
+                    .all(promises)
+                    .then(console.log(""))
+                    .catch(err => console.error(err));
+                }
             });
         }
         else {
@@ -102,4 +144,4 @@ export function cli(args) {
         }
     }
     
-}
+}   
