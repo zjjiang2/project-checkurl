@@ -1,0 +1,38 @@
+{
+  "name": "project-checkurl",
+  "version": "1.0.3",
+  "main": "src/index.js",
+  "bin": {
+    "project-checkurl": "bin/project-checkurl"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "cli",
+    "project-checkurl"
+  ],
+  "author": "zjjiang2",
+  "license": "MIT",
+  "description": "CLI tool to detect active URLs",
+  "dependencies": {
+    "arg": "^4.1.3",
+    "axios": "^0.20.0",
+    "colors": "^1.4.0",
+    "core-util-is": "^1.0.2",
+    "esm": "^3.2.25",
+    "inquirer": "^7.3.3"
+  },
+  "devDependencies": {},
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/zjjiang2/project-checkurl.git"
+  },
+  "bugs": {
+    "url": "https://github.com/zjjiang2/project-checkurl/issues"
+  },
+  "homepage": "https://github.com/zjjiang2/project-checkurl#readme"
+}
