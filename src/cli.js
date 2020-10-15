@@ -1,5 +1,6 @@
 
 import arg from 'arg';
+import { exit } from 'process';
 
 const fs = require('fs');
 const colors = require('colors');
@@ -12,6 +13,8 @@ function versionOption(rawArgs) {
     const args = arg({
         '--version': Boolean,
         '--v': '--version',
+        '--ignore': String,
+        '-i': '--ignore',
         '--all': Boolean,
         '--good': Boolean,
         '--bad': Boolean,
@@ -26,13 +29,13 @@ function versionOption(rawArgs) {
         showAll: args['--all'] || false,
         showGood: args['--good'] || false,
         showBad: args['--bad'] || false,
-        showJson: args['--json'] || false
+        showJson: args['--json'] || false,
+        ignoreUrl: args['--ignore'] || ''
     };
 }
 
 
-async function displayResult(data, options) {
-
+async function displayResult(data, options, ignoreUrls = []) {
     var goodLinks = 0;
     var badLinks = 0;
     var unknownLinks = 0;
@@ -55,76 +58,79 @@ async function displayResult(data, options) {
     while (match) {
         const siteName = match[1];
         goodLinksMark = goodLinks;
-        let promise = new Promise(function (resolve, reject) {
-            axios({
-                method: 'GET',
-                url: siteName,
-                setTimeout: 5000,
-                validateStatus: () => true
-            })
-                .then(res => {
-                    if (res.status == 200) {
-                        if (options.showGood == true || allShowing == true) {
-                            if (options.showJson) {
-                                resolve({ url: siteName, status: res.status });
-                            }
-                            else {
-                                console.log("|Good|\t\t".bgGreen.black + siteName.green);
-                            }
-                        }
-                        else{
-                            resolve(null)
-                        }
-                        goodLinks++;
-                    }
-                    else if (res.status == 404 || res.status == 400) {
-                        if (options.showBad == true || allShowing == true) {
-                            if (options.showJson) {
-                                resolve({ url: siteName, status: res.status });
-                            }
-                            else {
-                                console.log("|Bad|\t\t".bgRed.black + siteName.red);
-                            }
-                        }
-                        else{
-                            resolve(null)
-                        }
-                        badLinks++;
-                    }
-                    else {
-                        if (allShowing == true) {
-                            if (options.showJson) {
-                                resolve({ url: siteName, status: res.status });
-                            }
-                            else {
-                                console.log("|Unknown|\t".bgWhite.black + siteName.gray);
-                            }
-                        }
-                        else{
-                            resolve(null)
-                        }
-                        unknownLinks++;
-                    }
+        if (!ignoreUrls.some(url => siteName.startsWith(url))) {
+            let promise = new Promise(function (resolve, reject) {
+                axios({
+                    method: 'GET',
+                    url: siteName,
+                    setTimeout: 5000,
+                    validateStatus: () => true
                 })
-                .catch((error) => {
-                    if (allShowing == true) {
-                        if (options.showJson) {
-                            resolve({ url: siteName, status: 0 });
+                    .then(res => {
+                        if (res.status == 200) {
+                            if (options.showGood == true || allShowing == true) {
+                                if (options.showJson) {
+                                    resolve({ url: siteName, status: res.status });
+                                }
+                                else {
+                                    console.log("|Good|\t\t".bgGreen.black + siteName.green);
+                                }
+                            }
+                            else{
+                                resolve(null)
+                            }
+                            goodLinks++;
+                        }
+                        else if (res.status == 404 || res.status == 400) {
+                            if (options.showBad == true || allShowing == true) {
+                                if (options.showJson) {
+                                    resolve({ url: siteName, status: res.status });
+                                }
+                                else {
+                                    console.log("|Bad|\t\t".bgRed.black + siteName.red);
+                                }
+                            }
+                            else{
+                                resolve(null)
+                            }
+                            badLinks++;
                         }
                         else {
-                            console.log("|Error|\t\t".bgYellow.black + siteName.yellow + "\t" + error);
+                            if (allShowing == true) {
+                                if (options.showJson) {
+                                    resolve({ url: siteName, status: res.status });
+                                }
+                                else {
+                                    console.log("|Unknown|\t".bgWhite.black + siteName.gray);
+                                }
+                            }
+                            else{
+                                resolve(null)
+                            }
+                            unknownLinks++;
                         }
-                    }
-                    else{
-                        resolve(null)
-                    }
-                    unloadedLinks++;
-                })
-        })
+                    })
+                    .catch((error) => {
+                        if (allShowing == true) {
+                            if (options.showJson) {
+                                resolve({ url: siteName, status: 0 });
+                            }
+                            else {
+                                console.log("|Error|\t\t".bgYellow.black + siteName.yellow + "\t" + error);
+                            }
+                        }
+                        else{
+                            resolve(null)
+                        }
+                        unloadedLinks++;
+                    })
+            })
 
-        promises.push(promise);
-        
-        totalLinks++;
+            promises.push(promise);
+
+            totalLinks++;
+        }
+
         match = urlRegex.exec(data);
         if (!match) {
             doneMatch = true;
@@ -162,6 +168,8 @@ export function cli(args) {
             console.log("Please enter a file name that resides in the same directory.".red);
         }
         else if (args.length >= 3) {
+            const ignoreFile = options.ignoreUrl;
+
             var params = args.slice(2);;
             var fileName = './' + args[args.length - 1];
 
@@ -177,18 +185,38 @@ export function cli(args) {
             const promises = []
 
             //start reading the file
-            fs.readFile(fileName, 'utf8', function (err, data) {
-                if (err) {
-                    return console.log(err);
-                }
-                else {
+            console.log(ignoreFile)
+            if (ignoreFile) {
+                fs.readFile(ignoreFile, 'utf8', function (err, ignoreUrls) {
+                    if (err) {
+                        return console.log(err);
+                    }
+                    fs.readFile(fileName, 'utf8', function (err, data) {
+                        if (err) {
+                            return console.log(err);
+                        }
+                        console.log("\nValid URLs from \'".yellow + fileName + "\':\n".yellow);
+                        ignoreUrls = ignoreUrls.split('\n').filter(e => !e.startsWith("#"))
+                        ignoreUrls.forEach(e => {
+                            if (!['http://', 'https://'].some(http => e.startsWith(http))) {
+                                console.log('Invaild urls. Please starts with "http:// or https://"');
+                                exit(1);
+                            }
+                        });
+                        //start scanning the file, and display the results
+                        displayResult(data, options, ignoreUrls);
+                    });
+                });
+            } else {
+                fs.readFile(fileName, 'utf8', function (err, data) {
+                    if (err) {
+                        return console.log(err);
+                    }
                     console.log("\nValid URLs from \'".yellow + fileName + "\':\n".yellow);
-
                     //start scanning the file, and display the results
                     displayResult(data, options);
-
-                }
-            });
+                });
+            }
 
         }
         else {

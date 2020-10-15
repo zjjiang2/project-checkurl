@@ -19,3 +19,5 @@ Installing the package: ```npm install -g project-checkurl```
 Check the current version: ```project-checkurl --v```
 
 Scan file for working URLs: ```project-checkurl filename.txt```
+
+Ignore Urls from files: ```project-checkurl --ignore ignore-urls.txt filename.txt```
