@@ -1,20 +1,18 @@
 
 import arg from 'arg';
 import { exit } from 'process';
-
-const fs = require('fs');
-const colors = require('colors');
-const axios = require('axios');
+import axios from 'axios';
+import fs from 'fs'
+import colors from 'colors';
 const version = require('../package.json').version;
 
-const urlRegex = /(https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,9}\b([-a-zA-Z0-9()@:%_\+.~#?&\/\/;=]*))/g;
-
+//function to handle all argument options
 function versionOption(rawArgs) {
     const args = arg({
         '--version': Boolean,
         '--v': '--version',
         '--ignore': String,
-        '-i': '--ignore',
+        '--i': '--ignore',
         '--all': Boolean,
         '--good': Boolean,
         '--bad': Boolean,
@@ -23,7 +21,6 @@ function versionOption(rawArgs) {
     },
         { argv: rawArgs.slice(2) }
     );
-
     return {
         showVersion: args['--version'] || false,
         showAll: args['--all'] || false,
@@ -34,115 +31,96 @@ function versionOption(rawArgs) {
     };
 }
 
-
+//displays the  final results
 async function displayResult(data, options, ignoreUrls = []) {
-    var goodLinks = 0;
-    var badLinks = 0;
-    var unknownLinks = 0;
-    var unloadedLinks = 0;
-    var totalLinks = 0;
 
-    var doneMatch = false;
+    const urlRegex = /(https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,9}\b([-a-zA-Z0-9()@:%_\+.~#?&\/\/;=]*))/g;
 
-    var allShowing = true;
-
+    var showsAll = true;
     if (options.showGood == true || options.showBad == true) {
-        allShowing = false;
+        showsAll = false;
     }
 
-    let match = urlRegex.exec(data);
+    let matching = urlRegex.exec(data);
     var promises = []
 
-    var goodLinksMark = 0;
-
-    while (match) {
-        const siteName = match[1];
-        goodLinksMark = goodLinks;
+    while (matching) {
+        const siteName = matching[1];
         if (!ignoreUrls.some(url => siteName.startsWith(url))) {
-            let promise = new Promise(function (resolve, reject) {
+            let checkLinks = new Promise(function (resolve, reject) {
                 axios({
                     method: 'GET',
                     url: siteName,
                     setTimeout: 5000,
                     validateStatus: () => true
                 })
-                    .then(res => {
-                        if (res.status == 200) {
-                            if (options.showGood == true || allShowing == true) {
-                                if (options.showJson) {
-                                    resolve({ url: siteName, status: res.status });
-                                }
-                                else {
-                                    console.log("|Good|\t\t".bgGreen.black + siteName.green);
-                                }
-                            }
-                            else{
-                                resolve(null)
-                            }
-                            goodLinks++;
-                        }
-                        else if (res.status == 404 || res.status == 400) {
-                            if (options.showBad == true || allShowing == true) {
-                                if (options.showJson) {
-                                    resolve({ url: siteName, status: res.status });
-                                }
-                                else {
-                                    console.log("|Bad|\t\t".bgRed.black + siteName.red);
-                                }
-                            }
-                            else{
-                                resolve(null)
-                            }
-                            badLinks++;
-                        }
-                        else {
-                            if (allShowing == true) {
-                                if (options.showJson) {
-                                    resolve({ url: siteName, status: res.status });
-                                }
-                                else {
-                                    console.log("|Unknown|\t".bgWhite.black + siteName.gray);
-                                }
-                            }
-                            else{
-                                resolve(null)
-                            }
-                            unknownLinks++;
-                        }
-                    })
-                    .catch((error) => {
-                        if (allShowing == true) {
+                .then(res => {
+                    var jsonOutput = { url: siteName, status: res.status }
+                    if (res.status == 200) {
+                        if (options.showGood || showsAll) {
                             if (options.showJson) {
-                                resolve({ url: siteName, status: 0 });
+                                resolve(jsonOutput);
                             }
                             else {
-                                console.log("|Error|\t\t".bgYellow.black + siteName.yellow + "\t" + error);
+                                console.log("|Good|\t\t".bgGreen.black + siteName.green);
+                               }
                             }
-                        }
-                        else{
+                        else {
                             resolve(null)
                         }
-                        unloadedLinks++;
-                    })
+                    }
+                    else if (res.status == 404 || res.status == 400) {
+                        if (options.showBad || showsAll) {
+                            if (options.showJson) {
+                                resolve(jsonOutput);
+                            }
+                            else {
+                                console.log("|Bad|\t\t".bgRed.black + siteName.red);
+                            }
+                        }
+                        else {
+                            resolve(null)
+                        }
+                    }
+                    else {
+                        if (showsAll) {
+                            if (options.showJson) {
+                                resolve(jsonOutput);
+                            }
+                            else {
+                                console.log("|Unknown|\t".bgWhite.black + siteName.gray);
+                            }
+                        }
+                        else {
+                            resolve(null)
+                        }
+                    }
+                })
+                .catch((error) => {
+                    if (showsAll) {
+                        if (options.showJson) {
+                            resolve({ url: siteName, status: error.status });
+                        }
+                        else {
+                            console.log("|Error|\t\t".bgYellow.black + siteName.yellow + "\t" + error);
+                        }
+                    }
+                    else {
+                        resolve(null)
+                    }
+                })
             })
-
-            promises.push(promise);
-
-            totalLinks++;
+            promises.push(checkLinks);
         }
-
-        match = urlRegex.exec(data);
-        if (!match) {
-            doneMatch = true;
-        }
+        matching = urlRegex.exec(data);
     }
 
     Promise
         .all(promises)
         .then(done => {
             var display = [];
-            for(var i = 0; i < done.length; i++){
-                if(done[i] != null){
+            for (var i = 0; i < done.length; i++) {
+                if (done[i] != null) {
                     display.push(done[i])
                 }
             }
@@ -182,42 +160,33 @@ export function cli(args) {
                 }
             }
 
-            const promises = []
-
             //start reading the file
+            var ignoreList = [];
             console.log(ignoreFile)
             if (ignoreFile) {
                 fs.readFile(ignoreFile, 'utf8', function (err, ignoreUrls) {
                     if (err) {
                         return console.log(err);
                     }
-                    fs.readFile(fileName, 'utf8', function (err, data) {
-                        if (err) {
-                            return console.log(err);
-                        }
-                        console.log("\nValid URLs from \'".yellow + fileName + "\':\n".yellow);
-                        ignoreUrls = ignoreUrls.split('\n').filter(e => !e.startsWith("#"))
-                        ignoreUrls.forEach(e => {
-                            if (!['http://', 'https://'].some(http => e.startsWith(http))) {
-                                console.log('Invaild urls. Please starts with "http:// or https://"');
-                                exit(1);
-                            }
-                        });
-                        //start scanning the file, and display the results
-                        displayResult(data, options, ignoreUrls);
-                    });
-                });
-            } else {
-                fs.readFile(fileName, 'utf8', function (err, data) {
-                    if (err) {
-                        return console.log(err);
-                    }
                     console.log("\nValid URLs from \'".yellow + fileName + "\':\n".yellow);
-                    //start scanning the file, and display the results
-                    displayResult(data, options);
+                    ignoreUrls = ignoreUrls.split('\n').filter(e => !e.startsWith("#"))
+                    ignoreUrls.forEach(e => {
+                        if (!['http://', 'https://'].some(http => e.startsWith(http))) {
+                            console.log('Invaild urls. Please starts with "http:// or https://"');
+                            exit(1);
+                        }
+                    });
+                    ignoreList = ignoreUrls;
                 });
             }
-
+            fs.readFile(fileName, 'utf8', function (err, data) {
+                if (err) {
+                    return console.log(err);
+                }
+                console.log("\nValid URLs from \'".yellow + fileName + "\':\n".yellow);
+                //start scanning the file, and display the results
+                displayResult(data, options, ignoreList);
+            });
         }
         else {
             console.log(args);
