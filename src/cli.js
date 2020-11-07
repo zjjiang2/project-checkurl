@@ -156,6 +156,7 @@ export function cli(args) {
         }
         else if (args.length >= 3) {
             var params = args.slice(2);
+
             if(options.telescope){
                 var urlName = args[args.length - 1];
 
@@ -168,6 +169,7 @@ export function cli(args) {
                     }
                 }   
 
+                //access the argument url
                 axios({
                     method: 'GET',
                     url: urlName,
@@ -176,14 +178,18 @@ export function cli(args) {
                 })
                 .then(obj => {
                     var data = '';
+                    //store data url into string
                     for(var i = 0; i < obj.data.length; i++){
                         data = data + urlName + obj.data[i].url.slice(6) + '\n';
                     }
                     displayResult(data, options);
                 })
+                .catch(err =>{
+                    console.log("Invalid URL");
+                });
 
             }
-            else{
+            else {
                 const ignoreFile = options.ignoreUrl;
 
                 var params = args.slice(2);
