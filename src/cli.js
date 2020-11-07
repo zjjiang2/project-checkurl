@@ -17,7 +17,9 @@ function versionOption(rawArgs) {
         '--good': Boolean,
         '--bad': Boolean,
         '--json': Boolean,
-        '--j': '--json'
+        '--j': '--json',
+        '--telescope': Boolean,
+        '--t': '--telescope',
     },
         { argv: rawArgs.slice(2) }
     );
@@ -27,20 +29,27 @@ function versionOption(rawArgs) {
         showGood: args['--good'] || false,
         showBad: args['--bad'] || false,
         showJson: args['--json'] || false,
-        ignoreUrl: args['--ignore'] || ''
+        ignoreUrl: args['--ignore'] || '',
+        telescope: args['--telescope'] || false,
     };
 }
 
 //displays the  final results
 async function displayResult(data, options, ignoreUrls = []) {
 
-    const urlRegex = /(https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,9}\b([-a-zA-Z0-9()@:%_\+.~#?&\/\/;=]*))/g;
+    if(options.telescope){
+        var regex = /(https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}[a-zA-Z0-9()]{1,9}\b([-a-zA-Z0-9()@:%_\+.~#?&\/\/;=]*))/g;
+    }
+    else{
+        var regex = /(https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,9}\b([-a-zA-Z0-9()@:%_\+.~#?&\/\/;=]*))/g;
+    }
+    const urlRegex = regex;
 
     var showsAll = true;
     if (options.showGood == true || options.showBad == true) {
         showsAll = false;
     }
-
+    
     let matching = urlRegex.exec(data);
     var promises = []
 
@@ -146,47 +155,77 @@ export function cli(args) {
             console.log("Please enter a file name that resides in the same directory.".red);
         }
         else if (args.length >= 3) {
-            const ignoreFile = options.ignoreUrl;
+            var params = args.slice(2);
+            if(options.telescope){
+                var urlName = args[args.length - 1];
 
-            var params = args.slice(2);;
-            var fileName = './' + args[args.length - 1];
+                //loop to allow the arguments to be at any position
+                if (args.length > 3) {
+                    for (var i = 0; i < params.length; i++) {
+                        if (params[i].substring(0, 2) != '--') {
+                            urlName = params[i];
+                        }
+                    }
+                }   
 
-            //loop to allow the arguments to be at any
-            if (args.length > 3) {
-                for (var i = 0; i < params.length; i++) {
-                    if (params[i].substring(0, 2) != '--') {
-                        fileName = './' + params[i];
+                axios({
+                    method: 'GET',
+                    url: urlName,
+                    setTimeout: 5000,
+                    validateStatus: () => true
+                })
+                .then(obj => {
+                    var data = '';
+                    for(var i = 0; i < obj.data.length; i++){
+                        data = data + urlName + obj.data[i].url.slice(6) + '\n';
+                    }
+                    displayResult(data, options);
+                })
+
+            }
+            else{
+                const ignoreFile = options.ignoreUrl;
+
+                var params = args.slice(2);
+                var fileName = './' + args[args.length - 1];
+
+                //loop to allow the arguments to be at any position
+                if (args.length > 3) {
+                    for (var i = 0; i < params.length; i++) {
+                        if (params[i].substring(0, 2) != '--') {
+                            fileName = './' + params[i];
+                        }
                     }
                 }
-            }
 
-            //start reading the file
-            var ignoreList = [];
-            console.log(ignoreFile)
-            if (ignoreFile) {
-                fs.readFile(ignoreFile, 'utf8', function (err, ignoreUrls) {
+                //start reading the file
+                var ignoreList = [];
+                console.log(ignoreFile)
+                if (ignoreFile) {
+                    fs.readFile(ignoreFile, 'utf8', function (err, ignoreUrls) {
+                        if (err) {
+                            return console.log(err);
+                        }
+                        console.log("\nValid URLs from \'".yellow + fileName + "\':\n".yellow);
+                        ignoreUrls = ignoreUrls.split('\n').filter(e => !e.startsWith("#"))
+                        ignoreUrls.forEach(e => {
+                            if (!['http://', 'https://'].some(http => e.startsWith(http))) {
+                                console.log('Invaild urls. Please starts with "http:// or https://"');
+                                exit(1);
+                            }
+                        });
+                        ignoreList = ignoreUrls;
+                    });
+                }
+                fs.readFile(fileName, 'utf8', function (err, data) {
                     if (err) {
                         return console.log(err);
                     }
                     console.log("\nValid URLs from \'".yellow + fileName + "\':\n".yellow);
-                    ignoreUrls = ignoreUrls.split('\n').filter(e => !e.startsWith("#"))
-                    ignoreUrls.forEach(e => {
-                        if (!['http://', 'https://'].some(http => e.startsWith(http))) {
-                            console.log('Invaild urls. Please starts with "http:// or https://"');
-                            exit(1);
-                        }
-                    });
-                    ignoreList = ignoreUrls;
+                    //start scanning the file, and display the results
+                    displayResult(data, options, ignoreList);
                 });
             }
-            fs.readFile(fileName, 'utf8', function (err, data) {
-                if (err) {
-                    return console.log(err);
-                }
-                console.log("\nValid URLs from \'".yellow + fileName + "\':\n".yellow);
-                //start scanning the file, and display the results
-                displayResult(data, options, ignoreList);
-            });
         }
         else {
             console.log(args);
