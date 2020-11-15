@@ -25,7 +25,10 @@
     "esm": "^3.2.25",
     "inquirer": "^7.3.3"
   },
-  "devDependencies": {},
+  "devDependencies": {
+    "eslint": "^7.13.0",
+    "prettier": "2.1.2"
+  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/zjjiang2/project-checkurl.git"
