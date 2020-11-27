@@ -2,7 +2,9 @@ import arg from "arg";
 import { exit } from "process";
 import axios from "axios";
 import fs from "fs";
-const version = require("../package.json").version;
+// eslint-disable-next-line no-unused-vars
+import colors from "colors";
+import version from "../package.json";
 
 //function to handle all argument options
 function versionOption(rawArgs) {
@@ -54,7 +56,7 @@ async function displayResult(data, options, ignoreUrls = []) {
   while (matching) {
     const siteName = matching[1];
     if (!ignoreUrls.some((url) => siteName.startsWith(url))) {
-      let checkLinks = new Promise(function (resolve, reject) {
+      let checkLinks = new Promise(function (resolve) {
         axios({
           method: "GET",
           url: siteName,
@@ -116,7 +118,7 @@ async function displayResult(data, options, ignoreUrls = []) {
 
   Promise.all(promises).then((done) => {
     var display = [];
-    for (var i = 0; i < done.length; i++) {
+    for (let i = 0; i < done.length; i++) {
       if (done[i] != null) {
         display.push(done[i]);
       }
@@ -139,7 +141,7 @@ export function cli(args) {
   ) {
     console.log(
       "project-checkurl By Jason Jiang, Release 0.1, Version ".blue +
-        version.blue
+      version.version.blue
     );
   } else {
     if (args.length == 2) {
@@ -154,7 +156,7 @@ export function cli(args) {
 
         //loop to allow the arguments to be at any position
         if (args.length > 3) {
-          for (var i = 0; i < params.length; i++) {
+          for (let i = 0; i < params.length; i++) {
             if (params[i].substring(0, 2) != "--") {
               urlName = params[i];
             }
@@ -171,7 +173,7 @@ export function cli(args) {
           .then((obj) => {
             var data = "";
             //store data url into string
-            for (var i = 0; i < obj.data.length; i++) {
+            for (let i = 0; i < obj.data.length; i++) {
               data = data + urlName + obj.data[i].url.slice(6) + "\n";
             }
             displayResult(data, options);
@@ -182,12 +184,12 @@ export function cli(args) {
       } else {
         const ignoreFile = options.ignoreUrl;
 
-        var params = args.slice(2);
+        params = args.slice(2);
         var fileName = "./" + args[args.length - 1];
 
         //loop to allow the arguments to be at any position
         if (args.length > 3) {
-          for (var i = 0; i < params.length; i++) {
+          for (let i = 0; i < params.length; i++) {
             if (params[i].substring(0, 2) != "--") {
               fileName = "./" + params[i];
             }
