@@ -23,3 +23,7 @@ Use ESLint to check for any format or syntax errors:
 
 ## Intergrate Prettier & ESLint into VSCode
 Simply install the "Prettier ESLint" extension on VSCode's extensions tab, make sure both Prettier & ESLint packages are installed beforehand.
+
+## Run Testers for the Program
+Run Tests by calling: `npm test`
+See Test coverage by calling: `npm run coverage`
