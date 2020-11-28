@@ -140,7 +140,7 @@ function cli(args) {
     args.slice(2) == "/version"
   ) {
     console.log(
-      "project-checkurl By Jason Jiang, Release 0.1, Version ".blue +
+      "project-checkurl By Jason Jiang, Release 0.1 | Version ".blue +
       version.version.blue
     );
   } else {
