@@ -1,10 +1,16 @@
-import arg from "arg";
-import { exit } from "process";
-import axios from "axios";
-import fs from "fs";
-// eslint-disable-next-line no-unused-vars
-import colors from "colors";
-import version from "../package.json";
+// import arg from "arg";
+// import { exit } from "process";
+// import axios from "axios";
+// import fs from "fs";
+// import colors from "colors";
+// import version from "../package.json";
+
+const arg = require("arg");
+const { exit } = require("process");
+const { axiosRequest } = require("./axiosRequest");
+const fs = require("fs");
+const colors = require("colors");
+const version = require("../package.json");
 
 //function to handle all argument options
 function versionOption(rawArgs) {
@@ -55,14 +61,9 @@ async function displayResult(data, options, ignoreUrls = []) {
 
   while (matching) {
     const siteName = matching[1];
-    if (!ignoreUrls.some((url) => siteName.startsWith(url))) {
+    if (!ignoreUrls.some(url => siteName.startsWith(url))) {
       let checkLinks = new Promise(function (resolve) {
-        axios({
-          method: "GET",
-          url: siteName,
-          setTimeout: 5000,
-          validateStatus: () => true,
-        })
+        axiosRequest(siteName)
           .then((res) => {
             var jsonOutput = { url: siteName, status: res.status };
             if (res.status == 200) {
@@ -129,10 +130,9 @@ async function displayResult(data, options, ignoreUrls = []) {
 }
 
 //Main function
-export function cli(args) {
+function cli(args) {
   //recieve argument options
   let options = versionOption(args);
-
   //determine output types
   if (
     options.showVersion == true ||
@@ -164,12 +164,7 @@ export function cli(args) {
         }
 
         //access the argument url
-        axios({
-          method: "GET",
-          url: urlName,
-          setTimeout: 5000,
-          validateStatus: () => true,
-        })
+        axiosRequest(urlName)
           .then((obj) => {
             var data = "";
             //store data url into string
@@ -198,15 +193,11 @@ export function cli(args) {
 
         //start reading the file
         var ignoreList = [];
-        console.log(ignoreFile);
         if (ignoreFile) {
           fs.readFile(ignoreFile, "utf8", function (err, ignoreUrls) {
             if (err) {
               return console.log(err);
             }
-            console.log(
-              "\nValid URLs from '".yellow + fileName + "':\n".yellow
-            );
             ignoreUrls = ignoreUrls
               .split("\n")
               .filter((e) => !e.startsWith("#"));
@@ -227,6 +218,7 @@ export function cli(args) {
           }
           console.log("\nValid URLs from '".yellow + fileName + "':\n".yellow);
           //start scanning the file, and display the results
+          console.log(ignoreList);
           displayResult(data, options, ignoreList);
         });
       }
@@ -235,3 +227,6 @@ export function cli(args) {
     }
   }
 }
+
+module.exports.cli = cli;
+module.exports.versionOption = versionOption;
