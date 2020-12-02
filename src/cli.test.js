@@ -54,6 +54,45 @@ describe('versionOption Tests', () => {
         const options = versionOption(args)
         checkArgs(options, '.\\ignore-urls.txt', true, true, true, true, true, true);
     });
+
+    test('All Arguments Passed', () => {
+        const args = ['C:\\Program Files\\nodejs\\node.exe',
+        'C:\\Users\\jason\\AppData\\Roaming\\npm\\node_modules\\project-checkurl\\bin\\project-checkurl',
+        '--ignore',
+        '.\\ignore-urls.txt',
+        '--good',
+        '--json',
+        '--telescope',
+        '--version',
+        '.\\urls.txt'];
+        const options = versionOption(args)
+        checkArgs(options, '.\\ignore-urls.txt', false, false, true, true, true, true);
+    });
+
+    test('All Arguments Passed', () => {
+        const args = ['C:\\Program Files\\nodejs\\node.exe',
+        'C:\\Users\\jason\\AppData\\Roaming\\npm\\node_modules\\project-checkurl\\bin\\project-checkurl',
+        '--ignore',
+        '.\\ignore-urls.txt',
+        '--json',
+        '--version',
+        '.\\urls.txt'];
+        const options = versionOption(args)
+        checkArgs(options, '.\\ignore-urls.txt', false, false, false, true, true, false);
+    });
+
+    test('All Arguments Passed', () => {
+        const args = ['C:\\Program Files\\nodejs\\node.exe',
+        'C:\\Users\\jason\\AppData\\Roaming\\npm\\node_modules\\project-checkurl\\bin\\project-checkurl',
+        '--ignore',
+        '.\\ignore-urls.txt',
+        '--bad',
+        '--json',
+        '--version',
+        '.\\urls.txt'];
+        const options = versionOption(args)
+        checkArgs(options, '.\\ignore-urls.txt', false, true, false, true, true, false);
+    });
 });
 
 
